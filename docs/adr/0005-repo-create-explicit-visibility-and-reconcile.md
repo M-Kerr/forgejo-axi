@@ -54,7 +54,7 @@ does.
 
 ## Consequences
 
-Additive: a new command, a new capability name, and four new fields on the
+Additive: a new command, a new capability name, and three new fields on the
 repository object, all permitted in a minor release under the contract.
 
 An agent that wants to change an existing repository's visibility or default
@@ -62,7 +62,8 @@ branch reads `differs` and decides; `api PATCH repos/{owner}/{repo}` remains
 the mutation path. A future `repo edit` could take that over.
 
 The live lane creates and deletes a repository under the lane owner and under
-the authenticated login, so both routes are proven against a real host on
-every run. Deleting a repository needs the token's delete permission; a lane
-token without it reports the repository as leaked rather than failing
-silently.
+the authenticated login, so both routes are proven against a real host
+whenever the lane repository's owner is not the authenticated login, and only
+the user route otherwise. Deleting a repository needs the token's delete
+permission; a lane token without it reports the repository as leaked rather
+than failing silently.
