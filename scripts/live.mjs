@@ -651,6 +651,7 @@ try {
         made.repository?.private === true,
       String(made.error ?? made.repository?.full_name),
     );
+    if (made.created !== true) continue;
     const back = await raw('GET', `repos/${target}`);
     ok(
       `host serves the ${route} repository under that name`,
@@ -685,7 +686,9 @@ try {
       viewed.repository?.clone_url ===
         `${BASE_URL.replace(/\/$/, '')}/${target}.git` &&
         typeof viewed.repository?.ssh_url === 'string' &&
-        viewed.repository.ssh_url.endsWith(`/${target}.git`),
+        new RegExp(
+          `[/:]${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.git$`,
+        ).test(viewed.repository.ssh_url),
       `${viewed.repository?.clone_url} ${viewed.repository?.ssh_url}`,
     );
   }

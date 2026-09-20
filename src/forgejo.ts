@@ -503,7 +503,7 @@ export class ForgejoService {
 
     const login = await this.currentUser();
     const path =
-      repo.owner === login
+      repo.owner.toLowerCase() === login.toLowerCase()
         ? 'user/repos'
         : `orgs/${encodeURIComponent(repo.owner)}/repos`;
     const body: Record<string, unknown> = {

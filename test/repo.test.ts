@@ -154,6 +154,18 @@ describe('repo create', () => {
     });
   });
 
+  it('matches the owner to the login case-insensitively, as Forgejo does', async () => {
+    const server = await hostFor(15, { login: 'Acme', existing: {} });
+    const service = await serviceFor(server);
+    const result = await service.createRepo(repo, { private: true });
+    expect(result).toMatchObject({
+      created: true,
+      repository: { full_name: 'Acme/widgets', private: true },
+    });
+    const [post] = posts(server);
+    expect(post?.url).toBe('/api/v1/user/repos');
+  });
+
   it('creates under the organization route for any other owner, without guessing from the name', async () => {
     const server = await hostFor(15, { login: 'robot', existing: {} });
     const service = await serviceFor(server);
