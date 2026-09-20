@@ -249,6 +249,14 @@ if (liveRepo.status !== 200 || liveRepo.data?.full_name !== REPO) {
 console.log(
   `host ${BASE_URL} — Forgejo ${version}, actions_job_logs=${probed.capabilities?.actions_job_logs}`,
 );
+// The login the lane token authenticates as. It is the one account the lane
+// can rely on for assignment and for the user creation route; the repository
+// owner may be an organisation, which cannot be assigned an issue.
+const ME = String((await raw('GET', 'user')).data?.login ?? '');
+if (!ME) {
+  console.error(`Refusing to mutate: ${BASE_URL} did not report a login`);
+  process.exit(2);
+}
 
 const BRANCH = `live-probe-${Date.now().toString(36)}`;
 const created = {
@@ -545,11 +553,10 @@ try {
     'milestone filter narrows',
     excludesOther(repoCli(['issue', 'list', '--milestone', 'v-live'])),
   );
-  const owner = REPO.split('/')[0];
-  repoCli(['issue', 'edit', String(n), '--assignee', owner]);
+  repoCli(['issue', 'edit', String(n), '--assignee', ME]);
   ok(
     'assignee filter narrows',
-    excludesOther(repoCli(['issue', 'list', '--assignee', owner])),
+    excludesOther(repoCli(['issue', 'list', '--assignee', ME])),
   );
   ok(
     'state filter narrows',
@@ -1518,11 +1525,10 @@ try {
   // Both routes are driven: the lane repository's owner, and the authenticated
   // login itself. When the lane repository belongs to that login the two
   // collapse into one and only the user route is proven, which the note says.
-  const me = String(cli(['api', 'GET', 'user']).data?.login ?? '');
   const laneOwner = REPO.split('/')[0];
-  for (const owner of new Set([laneOwner, me])) {
+  for (const owner of new Set([laneOwner, ME])) {
     const target = `${owner}/${BRANCH}-repo`;
-    const route = owner === me ? 'user' : 'organization';
+    const route = owner === ME ? 'user' : 'organization';
     const made = cli(
       ['repo', 'create', '--repo', target, '--private', '--description', 'x'],
       { allowFail: true },
@@ -1576,7 +1582,7 @@ try {
       `${viewed.repository?.clone_url} ${viewed.repository?.ssh_url}`,
     );
   }
-  const unstated = `${me}/${BRANCH}-unstated`;
+  const unstated = `${ME}/${BRANCH}-unstated`;
   const refusedCreate = cli(['repo', 'create', '--repo', unstated], {
     allowFail: true,
   });
