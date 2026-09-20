@@ -32,6 +32,7 @@ import {
   type LabelInput,
   type PullRequestIdentity,
   type PullRequestListRow,
+  type RepoCreateInput,
   type RepositoryRef,
   type RunIdentity,
 } from './forgejo.js';
@@ -150,7 +151,6 @@ export async function main(options: MainOptions = {}): Promise<void> {
 const COMMAND_HELP: Record<string, string | undefined> = {
   status: HELP['status'],
   api: HELP['api'],
-  repo: HELP['repo view'],
 };
 
 async function homeOutput(
@@ -197,22 +197,94 @@ async function runStatus(
   return serviceFor(parsed, env).then((service) => service.status());
 }
 
-async function runRepo(
+const runRepo = dispatch('repo', {
+  view: repoView,
+  create: repoCreate,
+});
+
+async function repoView(
   args: string[],
   env: NodeJS.ProcessEnv,
 ): Promise<Record<string, unknown>> {
-  const subcommand = args[0];
-  if (subcommand !== 'view') {
-    throw usageError(`Unknown repo command: ${subcommand ?? '(missing)'}`, [
-      'Run `forgejo-axi repo view --help`',
-    ]);
-  }
-  const rest = args.slice(1);
-  const parsed = parseArgs(rest, withFlags({ '--repo': 'value' }), 'repo view');
+  const parsed = parseArgs(args, withFlags({ '--repo': 'value' }), 'repo view');
   rejectPositionals(parsed);
   const repo = resolveRepo(parsed, env);
   const service = await serviceFor(parsed, env);
   return { repository: await service.repoView(repo) };
+}
+
+const TRUST_MODELS = [
+  'default',
+  'collaborator',
+  'committer',
+  'collaboratorcommitter',
+];
+const OBJECT_FORMATS = ['sha1', 'sha256'];
+
+async function repoCreate(
+  args: string[],
+  env: NodeJS.ProcessEnv,
+): Promise<Record<string, unknown>> {
+  const parsed = parseArgs(
+    args,
+    withFlags({
+      '--repo': 'value',
+      '--private': 'boolean',
+      '--public': 'boolean',
+      '--description': 'value',
+      '--default-branch': 'value',
+      '--auto-init': 'boolean',
+      '--gitignores': 'value',
+      '--license': 'value',
+      '--readme': 'value',
+      '--template': 'boolean',
+      '--trust-model': 'value',
+      '--object-format': 'value',
+    }),
+    'repo create',
+  );
+  rejectPositionals(parsed);
+  const repo = resolveRepo(parsed, env);
+  // Visibility is never defaulted: a repository published by omission is the
+  // one mistake this command must make impossible.
+  const isPrivate = boolFlag(parsed, '--private');
+  const isPublic = boolFlag(parsed, '--public');
+  if (isPrivate === isPublic) {
+    throw usageError('Exactly one of --private or --public is required', [
+      'Run `forgejo-axi repo create --help`',
+    ]);
+  }
+  const trustModel = stringFlag(parsed, '--trust-model');
+  if (trustModel !== undefined && !TRUST_MODELS.includes(trustModel)) {
+    throw usageError(`--trust-model must be ${TRUST_MODELS.join(', ')}`);
+  }
+  const objectFormat = stringFlag(parsed, '--object-format');
+  if (objectFormat !== undefined && !OBJECT_FORMATS.includes(objectFormat)) {
+    throw usageError(`--object-format must be ${OBJECT_FORMATS.join(' or ')}`);
+  }
+  const defaultBranch = stringFlag(parsed, '--default-branch');
+  if (defaultBranch !== undefined && defaultBranch.length === 0) {
+    throw usageError('--default-branch may not be empty');
+  }
+  const input: RepoCreateInput = { private: isPrivate };
+  const description = stringFlag(parsed, '--description');
+  if (description !== undefined) input.description = description;
+  if (defaultBranch !== undefined) input.defaultBranch = defaultBranch;
+  if (boolFlag(parsed, '--auto-init')) input.autoInit = true;
+  const gitignores = stringFlag(parsed, '--gitignores');
+  if (gitignores !== undefined) input.gitignores = gitignores;
+  const license = stringFlag(parsed, '--license');
+  if (license !== undefined) input.license = license;
+  const readme = stringFlag(parsed, '--readme');
+  if (readme !== undefined) input.readme = readme;
+  if (boolFlag(parsed, '--template')) input.template = true;
+  if (trustModel !== undefined) input.trustModel = trustModel;
+  if (objectFormat !== undefined) input.objectFormat = objectFormat;
+
+  const service = await serviceFor(parsed, env);
+  if (!(await service.repoCreateSupported()))
+    return unsupportedResult('repo_create');
+  return service.createRepo(repo, input);
 }
 
 async function runApi(
