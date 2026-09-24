@@ -235,7 +235,7 @@ Flags:
 OWNER equal to the authenticated login creates under the user; any other OWNER
 creates in that organization. A repository already at OWNER/REPO is returned
 with created: false and never modified; differs lists requested fields it does
-not satisfy.
+not satisfy: private always, default_branch and description when requested.
 
 Examples:
   forgejo-axi repo create --repo owner/repo --private

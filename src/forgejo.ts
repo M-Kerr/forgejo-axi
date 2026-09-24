@@ -571,25 +571,15 @@ export class ForgejoService {
     existing: ApiRepository,
     input: RepoCreateInput,
   ): Record<string, unknown> {
+    const requested: Array<[string, unknown, unknown]> = [
+      ['private', input.private, existing.private ?? false],
+      ['default_branch', input.defaultBranch, existing.default_branch ?? ''],
+      ['description', input.description, existing.description ?? ''],
+    ];
     const differs: RepositoryDifference[] = [];
-    const actualPrivate = existing.private ?? false;
-    if (actualPrivate !== input.private) {
-      differs.push({
-        field: 'private',
-        requested: input.private,
-        actual: actualPrivate,
-      });
-    }
-    const actualBranch = existing.default_branch ?? '';
-    if (
-      input.defaultBranch !== undefined &&
-      input.defaultBranch !== actualBranch
-    ) {
-      differs.push({
-        field: 'default_branch',
-        requested: input.defaultBranch,
-        actual: actualBranch,
-      });
+    for (const [field, want, actual] of requested) {
+      if (want !== undefined && want !== actual)
+        differs.push({ field, requested: want, actual });
     }
     return {
       created: false,

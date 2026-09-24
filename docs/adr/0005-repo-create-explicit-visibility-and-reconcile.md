@@ -34,12 +34,12 @@ already at the address, whether read before the request or found behind a
 `409` the request provoked, is returned with `created: false` and exit `0`.
 Requested fields it does not satisfy are reported in `differs` as
 `{field, requested, actual}`, today `private` always and `default_branch`
-when requested. The command never patches the existing repository toward the
-request. `label create` and `pr create` reconcile by applying differences;
-this command reports them instead, because changing a repository's
-visibility is a publication or a lockdown, which is a decision for the
-caller and not a side effect of asking for a repository to exist. A `409`
-with nothing readable behind it remains `CONFLICT`.
+and `description` when requested. The command never patches the existing
+repository toward the request. `label create` and `pr create` reconcile by
+applying differences; this command reports them instead, because changing a
+repository's visibility is a publication or a lockdown, which is a decision
+for the caller and not a side effect of asking for a repository to exist. A
+`409` with nothing readable behind it remains `CONFLICT`.
 
 **One repository object.** `repo view` and `repo create` share a normalizer.
 Both gain `clone_url`, rebuilt from the canonical base URL like `url` and
@@ -57,9 +57,10 @@ does.
 Additive: a new command, a new capability name, and three new fields on the
 repository object, all permitted in a minor release under the contract.
 
-An agent that wants to change an existing repository's visibility or default
-branch reads `differs` and decides; `api PATCH repos/{owner}/{repo}` remains
-the mutation path. A future `repo edit` could take that over.
+An agent that wants to change an existing repository's visibility, default
+branch, or description reads `differs` and decides;
+`api PATCH repos/{owner}/{repo}` remains the mutation path. A future
+`repo edit` could take that over.
 
 The live lane creates and deletes a repository under the lane owner and under
 the authenticated login, so both routes are proven against a real host

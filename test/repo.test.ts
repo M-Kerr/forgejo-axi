@@ -255,11 +255,27 @@ describe('repo create', () => {
     });
     const service = await serviceFor(server);
     await expect(
-      service.createRepo(repo, { private: true }),
+      service.createRepo(repo, { private: true, description: 'Widgets' }),
     ).resolves.toMatchObject({ created: false, differs: [] });
     expect(server.requests.every((request) => request.method === 'GET')).toBe(
       true,
     );
+  });
+
+  it('lists a requested description the existing repository does not carry', async () => {
+    const fixture = await loadFixture<Fixture>(15);
+    const server = await hostFor(15, {
+      login: 'robot',
+      existing: { 'acme/widgets': { ...fixture.repository, private: true } },
+    });
+    const service = await serviceFor(server);
+    await expect(
+      service.createRepo(repo, { private: true, description: 'Docs' }),
+    ).resolves.toMatchObject({
+      created: false,
+      differs: [{ field: 'description', requested: 'Docs', actual: 'Widgets' }],
+    });
+    expect(posts(server)).toHaveLength(0);
   });
 
   it('reconciles onto the repository behind a 409 instead of failing', async () => {
