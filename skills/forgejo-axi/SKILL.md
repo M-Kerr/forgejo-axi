@@ -225,19 +225,12 @@ Example:
 forgejo-axi repo create — create a repository, or report the one already there
 
 Usage:
-  forgejo-axi repo create --repo OWNER/REPO (--private|--public) [--description TEXT] [--default-branch NAME] [--auto-init] [--gitignores LIST] [--license NAME] [--readme NAME] [--template] [--trust-model MODEL] [--object-format sha1|sha256] [connection flags]
+  forgejo-axi repo create --repo OWNER/REPO (--private|--public) [--description TEXT] [--default-branch NAME] [connection flags]
 
 Flags:
   --private | --public   Visibility; exactly one is required, never defaulted
   --description TEXT     Repository description
   --default-branch NAME  Default branch name
-  --auto-init            Create an initial commit from --gitignores, --license and --readme
-  --gitignores LIST      Comma-separated gitignore template names
-  --license NAME         License template name
-  --readme NAME          Readme template name
-  --template             Mark the repository as a template
-  --trust-model MODEL    default|collaborator|committer|collaboratorcommitter
-  --object-format FMT    sha1|sha256
 
 OWNER equal to the authenticated login creates under the user; any other OWNER
 creates in that organization. A repository already at OWNER/REPO is returned
@@ -246,7 +239,7 @@ not satisfy.
 
 Examples:
   forgejo-axi repo create --repo owner/repo --private
-  forgejo-axi repo create --repo org/repo --public --description 'Docs' --default-branch main --auto-init --readme Default
+  forgejo-axi repo create --repo org/repo --public --description 'Docs' --default-branch main
 ```
 
 ### pr

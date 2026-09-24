@@ -213,14 +213,6 @@ async function repoView(
   return { repository: await service.repoView(repo) };
 }
 
-const TRUST_MODELS = [
-  'default',
-  'collaborator',
-  'committer',
-  'collaboratorcommitter',
-];
-const OBJECT_FORMATS = ['sha1', 'sha256'];
-
 async function repoCreate(
   args: string[],
   env: NodeJS.ProcessEnv,
@@ -233,13 +225,6 @@ async function repoCreate(
       '--public': 'boolean',
       '--description': 'value',
       '--default-branch': 'value',
-      '--auto-init': 'boolean',
-      '--gitignores': 'value',
-      '--license': 'value',
-      '--readme': 'value',
-      '--template': 'boolean',
-      '--trust-model': 'value',
-      '--object-format': 'value',
     }),
     'repo create',
   );
@@ -254,14 +239,6 @@ async function repoCreate(
       'Run `forgejo-axi repo create --help`',
     ]);
   }
-  const trustModel = stringFlag(parsed, '--trust-model');
-  if (trustModel !== undefined && !TRUST_MODELS.includes(trustModel)) {
-    throw usageError(`--trust-model must be ${TRUST_MODELS.join(', ')}`);
-  }
-  const objectFormat = stringFlag(parsed, '--object-format');
-  if (objectFormat !== undefined && !OBJECT_FORMATS.includes(objectFormat)) {
-    throw usageError(`--object-format must be ${OBJECT_FORMATS.join(' or ')}`);
-  }
   const defaultBranch = stringFlag(parsed, '--default-branch');
   if (defaultBranch !== undefined && defaultBranch.length === 0) {
     throw usageError('--default-branch may not be empty');
@@ -270,16 +247,6 @@ async function repoCreate(
   const description = stringFlag(parsed, '--description');
   if (description !== undefined) input.description = description;
   if (defaultBranch !== undefined) input.defaultBranch = defaultBranch;
-  if (boolFlag(parsed, '--auto-init')) input.autoInit = true;
-  const gitignores = stringFlag(parsed, '--gitignores');
-  if (gitignores !== undefined) input.gitignores = gitignores;
-  const license = stringFlag(parsed, '--license');
-  if (license !== undefined) input.license = license;
-  const readme = stringFlag(parsed, '--readme');
-  if (readme !== undefined) input.readme = readme;
-  if (boolFlag(parsed, '--template')) input.template = true;
-  if (trustModel !== undefined) input.trustModel = trustModel;
-  if (objectFormat !== undefined) input.objectFormat = objectFormat;
 
   const service = await serviceFor(parsed, env);
   if (!(await service.repoCreateSupported()))

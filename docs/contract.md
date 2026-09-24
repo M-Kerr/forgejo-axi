@@ -11,7 +11,7 @@ forgejo-axi --version
 forgejo-axi setup hooks [--json]
 forgejo-axi status [connection flags]
 forgejo-axi repo view --repo OWNER/REPO [connection flags]
-forgejo-axi repo create --repo OWNER/REPO (--private|--public) [--description TEXT] [--default-branch NAME] [--auto-init] [--gitignores LIST] [--license NAME] [--readme NAME] [--template] [--trust-model default|collaborator|committer|collaboratorcommitter] [--object-format sha1|sha256] [connection flags]
+forgejo-axi repo create --repo OWNER/REPO (--private|--public) [--description TEXT] [--default-branch NAME] [connection flags]
 forgejo-axi api METHOD PATH [--data JSON] [--paginate [--limit N|--full]] [connection flags]
 forgejo-axi pr find --repo OWNER/REPO --head BRANCH [--base BRANCH] [--state STATE]
 forgejo-axi pr list --repo OWNER/REPO [--state STATE] [--limit N|--full] [--fields LIST|all]

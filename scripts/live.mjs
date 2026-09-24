@@ -633,7 +633,9 @@ try {
   // login itself. When the lane repository belongs to that login the two
   // collapse into one and only the user route is proven, which the note says.
   const laneOwner = REPO.split('/')[0];
-  for (const owner of new Set([laneOwner, ME])) {
+  const owners =
+    laneOwner.toLowerCase() === ME.toLowerCase() ? [ME] : [laneOwner, ME];
+  for (const owner of owners) {
     const target = `${owner}/${BRANCH}-repo`;
     const route = owner === ME ? 'user' : 'organization';
     const made = cli(

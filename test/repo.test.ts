@@ -42,6 +42,8 @@ interface World {
   withoutCreateRoutes?: boolean;
   /** A create that succeeds on the host but is answered as a 409. */
   raceOnCreate?: boolean;
+  /** Old addresses the host answers with a redirect to the renamed one. */
+  renamed?: Record<string, string>;
 }
 
 /**
@@ -66,6 +68,13 @@ async function hostFor(version: 15 | 16, world: World): Promise<FakeServer> {
       return json(response, 200, { login: world.login });
     const read = /^\/api\/v1\/repos\/([^/]+)\/([^/]+)$/.exec(recorded.url);
     if (read && recorded.method === 'GET') {
+      const moved = world.renamed?.[`${read[1]}/${read[2]}`];
+      if (moved) {
+        response.statusCode = 307;
+        response.setHeader('location', `/api/v1/repos/${moved}`);
+        response.end();
+        return;
+      }
       const found = world.existing[`${read[1]}/${read[2]}`];
       return found
         ? json(response, 200, found)
@@ -128,8 +137,6 @@ describe('repo create', () => {
       private: true,
       description: 'Widgets',
       defaultBranch: 'main',
-      autoInit: true,
-      readme: 'Default',
     });
     expect(result).toMatchObject({
       created: true,
@@ -149,8 +156,6 @@ describe('repo create', () => {
       private: true,
       description: 'Widgets',
       default_branch: 'main',
-      auto_init: true,
-      readme: 'Default',
     });
   });
 
@@ -181,6 +186,37 @@ describe('repo create', () => {
     expect(
       server.requests.some((request) => request.url === '/api/v1/user'),
     ).toBe(true);
+  });
+
+  it('creates when the address only redirects to a renamed repository', async () => {
+    const fixture = await loadFixture<Fixture>(16);
+    const server = await hostFor(16, {
+      login: 'robot',
+      existing: {
+        'acme/widgets-old': {
+          ...fixture.repository,
+          name: 'widgets-old',
+          full_name: 'acme/widgets-old',
+        },
+      },
+      renamed: { 'acme/widgets': 'acme/widgets-old' },
+    });
+    const service = await serviceFor(server);
+    const result = await service.createRepo(repo, { private: true });
+    expect(result).toMatchObject({
+      created: true,
+      differs: [],
+      repository: { full_name: 'acme/widgets', private: true },
+    });
+    expect(
+      server.requests.map((request) => `${request.method} ${request.url}`),
+    ).toEqual(
+      expect.arrayContaining([
+        'GET /api/v1/repos/acme/widgets',
+        'GET /api/v1/repos/acme/widgets-old',
+        'POST /api/v1/orgs/acme/repos',
+      ]),
+    );
   });
 
   it('returns an existing repository without mutating it and lists what differs', async () => {
@@ -318,7 +354,7 @@ describe('repo create through the CLI', () => {
     expect(server.requests).toHaveLength(0);
   });
 
-  it('validates enum flags and rejects unknown flags by name before any request', async () => {
+  it('refuses an empty default branch and unknown flags by name before any request', async () => {
     const server = await hostFor(15, { login: 'robot', existing: {} });
     const bad = await invoke(
       [
@@ -326,13 +362,13 @@ describe('repo create through the CLI', () => {
         'create',
         ...connection(server),
         '--private',
-        '--trust-model',
-        'anyone',
+        '--default-branch',
+        '',
       ],
       { TOKEN: 'fixture-token-7f3a' },
     );
     expect(bad.exitCode).toBe(2);
-    expect(bad.output).toContain('--trust-model must be');
+    expect(bad.output).toContain('--default-branch may not be empty');
     const unknown = await invoke(
       ['repo', 'create', ...connection(server), '--private', '--visibility'],
       { TOKEN: 'fixture-token-7f3a' },

@@ -225,13 +225,6 @@ export interface RepoCreateInput {
   private: boolean;
   description?: string;
   defaultBranch?: string;
-  autoInit?: boolean;
-  gitignores?: string;
-  license?: string;
-  readme?: string;
-  template?: boolean;
-  trustModel?: string;
-  objectFormat?: string;
 }
 
 /** One requested field the existing repository does not satisfy. */
@@ -514,14 +507,6 @@ export class ForgejoService {
       body['description'] = input.description;
     if (input.defaultBranch !== undefined)
       body['default_branch'] = input.defaultBranch;
-    if (input.autoInit !== undefined) body['auto_init'] = input.autoInit;
-    if (input.gitignores !== undefined) body['gitignores'] = input.gitignores;
-    if (input.license !== undefined) body['license'] = input.license;
-    if (input.readme !== undefined) body['readme'] = input.readme;
-    if (input.template !== undefined) body['template'] = input.template;
-    if (input.trustModel !== undefined) body['trust_model'] = input.trustModel;
-    if (input.objectFormat !== undefined)
-      body['object_format_name'] = input.objectFormat;
 
     try {
       const response = await this.http.api<ApiRepository>({
@@ -570,7 +555,10 @@ export class ForgejoService {
       const response = await this.http.api<ApiRepository>({
         path: repoPath(repo),
       });
-      return response.data;
+      const fullName = response.data.full_name ?? '';
+      return fullName.toLowerCase() === repo.fullName.toLowerCase()
+        ? response.data
+        : null;
     } catch (error) {
       if (error instanceof ForgejoAxiError && error.code === 'NOT_FOUND')
         return null;
