@@ -548,6 +548,9 @@ export class ForgejoService {
     }
   }
 
+  // Forgejo answers a renamed repository's old name with a redirect the GET
+  // follows, so a different full_name means nothing lives at this address and
+  // a create there would succeed.
   private async getRepoIfExists(
     repo: RepositoryRef,
   ): Promise<ApiRepository | null> {
