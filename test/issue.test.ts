@@ -925,7 +925,7 @@ describe('organization label resolution', () => {
       details: { name: 'owner', organization_labels: 'forbidden' },
       help: [
         'Run `forgejo-axi label list --repo acme/widgets`',
-        'Grant the token the read:organization scope so organization labels can be resolved',
+        'If acme is an organization, grant the token the read:organization scope so its labels can be resolved',
       ],
     });
     expect(server.requests.some((request) => request.method === 'POST')).toBe(

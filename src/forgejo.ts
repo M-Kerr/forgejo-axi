@@ -2662,7 +2662,7 @@ function requireOwnerLabel(
       details: { organization_labels: 'forbidden' },
       suggestions: [
         repoLookup.hint,
-        'Grant the token the read:organization scope so organization labels can be resolved',
+        `If ${repo.owner} is an organization, grant the token the read:organization scope so its labels can be resolved`,
       ],
     });
   }
